@@ -1,0 +1,39 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class utilisateur extends Model
+{
+    protected $fillable = [
+        'nom', 
+        'email', 
+        'password', 
+        'role_id', 
+        'actif'
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'password' => 'hashed',
+        ];
+    }
+    protected $casts = [
+        'verified_at' => 'datetime',
+        'role_id' => 'integer',
+        'actif' => 'boolean',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
+    public function role() {
+    return $this->belongsTo(Role::class);
+    }
+}
