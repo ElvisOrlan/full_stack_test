@@ -6,6 +6,9 @@ use App\Models\Utilisateur;
 use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
+use Exception;
 
 class UtilisateurController extends Controller
 {
@@ -84,11 +87,73 @@ class UtilisateurController extends Controller
             'roles' => $roles
         ]);
     }
-   
+
+    /**
+     * Enregistrer un nouvel utilisateur
+     */
+    public function enregistrer(Request $request): JsonResponse
+    {       
+        try {             
+            // validation des données recues
+            $validator = Validator::make($request->all(), [
+                'nom' => 'required|string|max:255',
+                'email' => 'required|string|max:255|unique:utilisateurs',
+                'password' => 'required|string',
+                'role' => 'required|string|in:admin,user',
+                'actif' => 'required|boolean'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Données invalides',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+            $validatedData = $validator->validated();             
+
+            // conversion du role en role_id
+            $roleMapping = [
+                'admin' => 1,
+                'user' => 2
+            ];
+            $validatedData['role_id'] = $roleMapping[$validatedData['role']];
+            unset($validatedData['role']);          
+
+            $validatedData['password'] = Hash::make($validatedData['password']);            
+        
+            // création de l'utilisateur
+            $user = Utilisateur::create($validatedData);
+
+            // réponse de succès
+            return response()->json([
+                'success' => true,
+                'message' => 'Utilisateur créé avec succès',
+                'data' => [
+                    'id' => $user->id,
+                    'nom' => $user->nom,
+                    'email' => $user->email,
+                    'role_id' => $user->role_id,
+                    'actif' => $user->actif,
+                    'created_at' => $user->created_at
+                ]
+            ], 201);
+
+        } catch (Exception $e) {
+            // Gestion des erreurs générales
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur serveur lors de l\'enregistrement',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }   
+
+
     /**
      * Générer les initiales à partir du nom
      */
-  private function generateInitials($nom)
+    private function generateInitials($nom)
     {
         if (empty($nom)) {
             return 'NU'; // No User
@@ -105,4 +170,4 @@ class UtilisateurController extends Controller
         
         return $initials ?: 'NU';
     }
-}
+    }

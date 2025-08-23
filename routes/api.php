@@ -16,5 +16,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 // Route pour récupérer la liste des utilisateurs
-Route::get('/utilisateurs', [UtilisateurController::class, 'getUsers'])->name('api.users.index');
+Route::get('/users', [UtilisateurController::class, 'getUsers'])->name('api.users.index');
 
+// Route pour enregistrer un nouvel utilisateur
+Route::post('users', [UtilisateurController::class, 'enregistrer']);

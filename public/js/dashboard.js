@@ -40,17 +40,14 @@ class UserManager {
                 params.append("sort_direction", filters.sort_direction);
             }
 
-            const response = await fetch(
-                `/api/utilisateurs?${params.toString()}`,
-                {
-                    method: "GET",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Accept: "application/json",
-                        "X-Requested-With": "XMLHttpRequest",
-                    },
-                }
-            );
+            const response = await fetch(`/api/users?${params.toString()}`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+            });
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -518,6 +515,8 @@ class UserManager {
         document.getElementById("user-id").value = user.id;
         document.getElementById("user-name").value = user.name;
         document.getElementById("user-email").value = user.email;
+        document.getElementById("user-password").value = "";
+        document.getElementById("user-password-confirmation").value = "";
         document.getElementById("user-role").value = user.role;
         document.getElementById("user-status").value = user.status;
     }
@@ -530,9 +529,9 @@ class UserManager {
             email: formData.get("email").trim(),
             role: formData.get("role"),
             status: formData.get("status"),
+            password: formData.get("password"),
         };
 
-        // validation
         if (!this.validateUserData(userData)) {
             return;
         }
@@ -562,7 +561,7 @@ class UserManager {
 
     // ajouter d'un utilisateur via API
     async addUserAPI(userData) {
-        const response = await fetch("/api/utilisateurs", {
+        const response = await fetch("/api/users", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -577,6 +576,7 @@ class UserManager {
                 email: userData.email,
                 role: userData.role,
                 actif: userData.status === "actif",
+                password: userData.password,
             }),
         });
 
@@ -590,7 +590,7 @@ class UserManager {
 
     // modification d'un utilisateur via API
     async updateUserAPI(userId, userData) {
-        const response = await fetch(`/api/utilisateurs/${userId}`, {
+        const response = await fetch(`/api/users/${userId}`, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",
@@ -605,6 +605,7 @@ class UserManager {
                 email: userData.email,
                 role: userData.role,
                 actif: userData.status === "actif",
+                password: userData.password ? userData.password : undefined,
             }),
         });
 
@@ -618,6 +619,10 @@ class UserManager {
 
     // validation des données utilisateur
     validateUserData(userData) {
+        const userId = document.getElementById("user-id").value;
+        const isEdit = !!userId;
+
+        // validation des champs obligatoires (sauf mot de passe en édition)
         if (
             !userData.name ||
             !userData.email ||
@@ -628,14 +633,42 @@ class UserManager {
             return false;
         }
 
+        // Validation du mot de passe (obligatoire seulement en création)
+        if (!isEdit && !userData.password) {
+            this.showNotification("Le mot de passe est obligatoire", "error");
+            return false;
+        }
+
+        // Validation de la confirmation du mot de passe si un mot de passe est fourni
+        const passwordConfirmation = document.getElementById(
+            "user-password-confirmation"
+        ).value;
+
+        if (userData.password && userData.password !== passwordConfirmation) {
+            this.showNotification(
+                "Les mots de passe ne correspondent pas",
+                "error"
+            );
+            return false;
+        }
+
+        // Si on est en édition et qu'un mot de passe est fourni, on vérifie la confirmation
+        if (isEdit && userData.password && !passwordConfirmation) {
+            this.showNotification(
+                "Veuillez confirmer le nouveau mot de passe",
+                "error"
+            );
+            return false;
+        }
+
+        // Validation du format email
         if (!this.isValidEmail(userData.email)) {
             this.showNotification("Adresse email invalide", "error");
             return false;
         }
 
-        const userId = document.getElementById("user-id").value;
         const emailExists = this.users.some(
-            (u) => u.email === userData.email && u.id !== parseInt(userId)
+            (u) => u.email === userData.email && u.id !== parseInt(userId || 0)
         );
 
         if (emailExists) {
@@ -740,7 +773,7 @@ class UserManager {
 
     // Supprimé un utilisateur via API
     async deleteUserAPI(userId) {
-        const response = await fetch(`/api/utilisateurs/${userId}`, {
+        const response = await fetch(`/api/users/${userId}`, {
             method: "DELETE",
             headers: {
                 "Content-Type": "application/json",
@@ -762,7 +795,7 @@ class UserManager {
 
     // Suppression groupée via API
     async bulkDeleteAPI(userIds) {
-        const response = await fetch("/api/utilisateurs/bulk-delete", {
+        const response = await fetch("/api/users/bulk-delete", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

@@ -6,6 +6,16 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Administration des Utilisateurs</title>
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
+    <style>
+    .toggle-password {
+        position: absolute;
+        right: 10px;
+        top: 35px;
+        cursor: pointer;
+        font-size: 18px;
+        user-select: none;
+    }
+</style>
 </head>
 <body>
     <!-- Entête de la page -->
@@ -89,8 +99,68 @@
         </div>
     </main>
 
-    <!-- Modal d'ajout/modification d'utilisateur -->
+    <!-- Modal d'ajout d'utilisateur -->
     <div id="user-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Ajouter un utilisateur</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="user-form">
+                    <input type="hidden" id="user-id">
+                    
+                    <div class="form-group">
+                        <label for="user-name">Nom complet *</label>
+                        <input type="text" id="user-name" name="name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="user-email">Email *</label>
+                        <input type="email" id="user-email" name="email" required>
+                    </div>
+
+                    <div class="form-group" style="position: relative;">
+                        <label for="user-password">Mot de passe *</label>
+                        <input type="password" id="user-password" name="password" required>
+                        <span class="toggle-password" data-target="user-password">Afficher</span>
+                        </div>
+
+                        <div class="form-group" style="position: relative;">
+                        <label for="user-password-confirmation">Confirmation du mot de passe *</label>
+                        <input type="password" id="user-password-confirmation" name="password-confirmation" required>
+                        <span class="toggle-password" data-target="user-password-confirmation">Afficher</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="user-role">Rôle *</label>
+                        <select id="user-role" name="role" required>
+                            <option value="">Sélectionner un rôle</option>
+                            <option value="admin">Admin</option>
+                            <option value="user">Utilisateur</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="user-status">Statut *</label>
+                        <select id="user-status" name="status" required>
+                            <option value="">Sélectionner un statut</option>
+                            <option value="actif">Actif</option>
+                            <option value="inactif">Inactif</option>
+                        </select>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" id="cancel-btn">Annuler</button>
+                        <button type="submit" class="btn-primary" id="save-btn">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de modification d'utilisateur -->
+    <!-- <div id="user-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="modal-title">Ajouter un utilisateur</h2>
@@ -135,7 +205,7 @@
                 </form>
             </div>
         </div>
-    </div>
+    </div> -->
 
     <!-- Modal de confirmation de suppression -->
     <div id="delete-modal" class="modal">
@@ -193,6 +263,55 @@
 
     <!-- Overlay pour les modals -->
     <div id="modal-overlay" class="modal-overlay"></div>
+    <!-- Scripts pour confirmation immediate de mot de passe -->
+    <script>
+        const passwordInput = document.getElementById('user-password');
+        const confirmInput = document.getElementById('user-password-confirmation');
+        const form = document.getElementById('user-form');
+
+        // Création d’un petit message d’erreur
+        const errorMsg = document.createElement('small');
+        errorMsg.style.color = 'red';
+        confirmInput.parentNode.appendChild(errorMsg);
+
+        function validatePasswordMatch() {
+            if (confirmInput.value === '') {
+            errorMsg.textContent = '';
+            confirmInput.setCustomValidity('');
+            return;
+            }
+
+            if (passwordInput.value !== confirmInput.value) {
+            errorMsg.textContent = 'Les mots de passe ne correspondent pas.';
+            confirmInput.setCustomValidity('Les mots de passe ne correspondent pas.');
+            } else {
+            errorMsg.textContent = '';
+            confirmInput.setCustomValidity('');
+            }
+        }
+
+        passwordInput.addEventListener('input', validatePasswordMatch);
+        confirmInput.addEventListener('input', validatePasswordMatch);
+
+        form.addEventListener('submit', function (e) {
+            validatePasswordMatch();
+            if (!form.checkValidity()) {
+            e.preventDefault(); // Empêche l’envoi si validation échoue
+            }
+        });
+    </script>
+    <script>
+        document.querySelectorAll('.toggle-password').forEach(function (eyeIcon) {
+            eyeIcon.addEventListener('click', function () {
+            const targetId = this.getAttribute('data-target');
+            const input = document.getElementById(targetId);
+            const isPassword = input.getAttribute('type') === 'password';
+
+            input.setAttribute('type', isPassword ? 'text' : 'password');
+            this.textContent = isPassword ? 'Masquer' : 'Afficher'; 
+            });
+        });
+    </script>
 
     <script src="{{ asset('js/dashboard.js') }}"></script>
 </body>

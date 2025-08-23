@@ -18,17 +18,12 @@ class utilisateur extends Model
         'password',
         'remember_token',
     ];
-
-    protected function casts(): array
-    {
-        return [
-            'password' => 'hashed',
-        ];
-    }
+    
     protected $casts = [
         'verified_at' => 'datetime',
         'role_id' => 'integer',
         'actif' => 'boolean',
+        'password' => 'hashed',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
