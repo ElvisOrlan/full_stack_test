@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Administration des Utilisateurs</title>
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
 </head>
@@ -63,171 +64,18 @@
                                 <input type="checkbox" class="select-all-checkbox">
                             </th>
                             <th>Photo</th>
-                            <th data-sort="name">Nom <span class="sort-indicator"></span></th>
+                            <th data-sort="nom">Nom <span class="sort-indicator"></span></th>
                             <th data-sort="email">Email <span class="sort-indicator"></span></th>
                             <th data-sort="role">Rôle <span class="sort-indicator"></span></th>
-                            <th data-sort="status">Statut <span class="sort-indicator"></span></th>
-                            <th data-sort="created_date">Date de création <span class="sort-indicator"></span></th>
+                            <th data-sort="actif">Statut <span class="sort-indicator"></span></th>
+                            <th data-sort="created_at">Date de création <span class="sort-indicator"></span></th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                 <!-- fin entête du tableau -->
 
                     <tbody>
-                        <!-- Données Utilisateur  -->
-                        <tr data-user-id="1">
-                            <td><input type="checkbox" class="user-checkbox" value="1"></td>
-                            <td>
-                                <div class="profile-pic">JD</div>
-                            </td>
-                            <td>Jean françois Konan</td>
-                            <td>jean.françois@mail.com</td>
-                            <td><span class="role-badge admin">Admin</span></td>
-                            <td><span class="status-badge actif">Actif</span></td>
-                            <td>2024-01-15</td>
-                            <td>
-
-                                <!-- boutons d'action -->
-                                <div class="actions-buttons">
-                                    <button class="btn-action btn-view" data-action="view" data-user-id="1" title="Voir">👁</button>
-                                    <button class="btn-action btn-edit" data-action="edit" data-user-id="1" title="Modifier">✏️</button>
-                                    <button class="btn-action btn-delete" data-action="delete" data-user-id="1" title="Supprimer">🗑️</button>
-                                </div>
-                            </td>
-                        </tr>
-
-                        <tr data-user-id="2">
-                            <td><input type="checkbox" class="user-checkbox" value="2"></td>
-                            <td>
-                                <div class="profile-pic">MS</div>
-                            </td>
-                            <td>Kacou hugues Bertin</td>
-                            <td>kacou.hugues@mail.com</td>
-                            <td><span class="role-badge utilisateur">Utilisateur</span></td>
-                            <td><span class="status-badge actif">Actif</span></td>
-                            <td>2024-02-20</td>
-                            <td>
-                                <div class="actions-buttons">
-                                    <button class="btn-action btn-view" data-action="view" data-user-id="2" title="Voir">👁</button>
-                                    <button class="btn-action btn-edit" data-action="edit" data-user-id="2" title="Modifier">✏️</button>
-                                    <button class="btn-action btn-delete" data-action="delete" data-user-id="2" title="Supprimer">🗑️</button>
-                                </div>
-                            </td>
-                        </tr>
-
-                        <tr data-user-id="3">
-                            <td><input type="checkbox" class="user-checkbox" value="3"></td>
-                            <td>
-                                <div class="profile-pic">PL</div>
-                            </td>
-                            <td>N'guessan Lambert</td>
-                            <td>nguessan.lambert@mail.com</td>
-                            <td><span class="role-badge utilisateur">Utilisateur</span></td>
-                            <td><span class="status-badge inactif">Inactif</span></td>
-                            <td>2024-03-10</td>
-                            <td>
-                                <div class="actions-buttons">
-                                    <button class="btn-action btn-view" data-action="view" data-user-id="3" title="Voir">👁</button>
-                                    <button class="btn-action btn-edit" data-action="edit" data-user-id="3" title="Modifier">✏️</button>
-                                    <button class="btn-action btn-delete" data-action="delete" data-user-id="3" title="Supprimer">🗑️</button>
-                                </div>
-                            </td>
-                        </tr>
-
-                        <tr data-user-id="4">
-                            <td><input type="checkbox" class="user-checkbox" value="4"></td>
-                            <td>
-                                <div class="profile-pic">AB</div>
-                            </td>
-                            <td>Zocou Bernard</td>
-                            <td>zocou.bernard@mail.com</td>
-                            <td><span class="role-badge admin">Admin</span></td>
-                            <td><span class="status-badge actif">Actif</span></td>
-                            <td>2024-01-25</td>
-                            <td>
-                                <div class="actions-buttons">
-                                    <button class="btn-action btn-view" data-action="view" data-user-id="4" title="Voir">👁</button>
-                                    <button class="btn-action btn-edit" data-action="edit" data-user-id="4" title="Modifier">✏️</button>
-                                    <button class="btn-action btn-delete" data-action="delete" data-user-id="4" title="Supprimer">🗑️</button>
-                                </div>
-                            </td>
-                        </tr>
-
-                        <tr data-user-id="5">
-                            <td><input type="checkbox" class="user-checkbox" value="5"></td>
-                            <td>
-                                <div class="profile-pic">LM</div>
-                            </td>
-                            <td>Lakota Martin</td>
-                            <td>lakota.martin@mail.com</td>
-                            <td><span class="role-badge utilisateur">Utilisateur</span></td>
-                            <td><span class="status-badge actif">Actif</span></td>
-                            <td>2024-04-05</td>
-                            <td>
-                                <div class="actions-buttons">
-                                    <button class="btn-action btn-view" data-action="view" data-user-id="5" title="Voir">👁</button>
-                                    <button class="btn-action btn-edit" data-action="edit" data-user-id="5" title="Modifier">✏️</button>
-                                    <button class="btn-action btn-delete" data-action="delete" data-user-id="5" title="Supprimer">🗑️</button>
-                                </div>
-                            </td>
-                        </tr>
-
-                        <tr data-user-id="6">
-                            <td><input type="checkbox" class="user-checkbox" value="6"></td>
-                            <td>
-                                <div class="profile-pic">SD</div>
-                            </td>
-                            <td>N'guoran parfait</td>
-                            <td>ngoran.parfait@mail.com</td>
-                            <td><span class="role-badge utilisateur">Utilisateur</span></td>
-                            <td><span class="status-badge inactif">Inactif</span></td>
-                            <td>2024-02-15</td>
-                            <td>
-                                <div class="actions-buttons">
-                                    <button class="btn-action btn-view" data-action="view" data-user-id="6" title="Voir">👁</button>
-                                    <button class="btn-action btn-edit" data-action="edit" data-user-id="6" title="Modifier">✏️</button>
-                                    <button class="btn-action btn-delete" data-action="delete" data-user-id="6" title="Supprimer">🗑️</button>
-                                </div>
-                            </td>
-                        </tr>
-
-                        <tr data-user-id="7">
-                            <td><input type="checkbox" class="user-checkbox" value="7"></td>
-                            <td>
-                                <div class="profile-pic">MR</div>
-                            </td>
-                            <td>Kouakou Marc Olivier </td>
-                            <td>kouakou.marc@email.com</td>
-                            <td><span class="role-badge utilisateur">Utilisateur</span></td>
-                            <td><span class="status-badge actif">Actif</span></td>
-                            <td>2024-03-22</td>
-                            <td>
-                                <div class="actions-buttons">
-                                    <button class="btn-action btn-view" data-action="view" data-user-id="7" title="Voir">👁</button>
-                                    <button class="btn-action btn-edit" data-action="edit" data-user-id="7" title="Modifier">✏️</button>
-                                    <button class="btn-action btn-delete" data-action="delete" data-user-id="7" title="Supprimer">🗑️</button>
-                                </div>
-                            </td>
-                        </tr>
-
-                        <tr data-user-id="8">
-                            <td><input type="checkbox" class="user-checkbox" value="8"></td>
-                            <td>
-                                <div class="profile-pic">CB</div>
-                            </td>
-                            <td>Zossou blanchard</td>
-                            <td>zossou.blanchard@mail.com</td>
-                            <td><span class="role-badge admin">Admin</span></td>
-                            <td><span class="status-badge actif">Actif</span></td>
-                            <td>2024-01-30</td>
-                            <td>
-                                <div class="actions-buttons">
-                                    <button class="btn-action btn-view" data-action="view" data-user-id="8" title="Voir">👁</button>
-                                    <button class="btn-action btn-edit" data-action="edit" data-user-id="8" title="Modifier">✏️</button>
-                                    <button class="btn-action btn-delete" data-action="delete" data-user-id="8" title="Supprimer">🗑️</button>
-                                </div>
-                            </td>
-                        </tr>
+                            <!-- Les information du tableau seront affichées ici -->
                     </tbody>
                 </table>
             </div>

@@ -1,105 +1,184 @@
 // gestionnaire des utilisateurs et des actions
 class UserManager {
     constructor() {
-        this.users = this.loadInitialUsers();
-        this.filteredUsers = [...this.users];
+        this.users = [];
+        this.filteredUsers = [];
         this.currentSort = { field: null, direction: "asc" };
+        this.roles = [];
+        this.isLoading = false;
         this.init();
     }
 
-    //chargement des données des utilisateurs (données de test pour voir à quoi devra ressembler l'interface)
-    loadInitialUsers() {
-        return [
-            {
-                id: 1,
-                name: "Jean françois Konan",
-                email: "jean.françois@mail.com",
-                role: "admin",
-                status: "actif",
-                created_date: "2024-01-15",
-            },
-            {
-                id: 2,
-                name: "Kacou hugues Bertin",
-                email: "kacou.hugues@mail.com",
-                role: "utilisateur",
-                status: "actif",
-                created_date: "2024-02-20",
-            },
-            {
-                id: 3,
-                name: "N'guessan Lambert",
-                email: "nguessan.lambert@mail.com",
-                role: "utilisateur",
-                status: "inactif",
-                created_date: "2024-03-10",
-            },
-            {
-                id: 4,
-                name: "Zocou Bernard",
-                email: "zocou.bernard@mail.com",
-                role: "admin",
-                status: "actif",
-                created_date: "2024-01-25",
-            },
-            {
-                id: 5,
-                name: "Lakota Martin",
-                email: "lakota.martin@mail.com",
-                role: "utilisateur",
-                status: "actif",
-                created_date: "2024-04-05",
-            },
-            {
-                id: 6,
-                name: "N'guoran parfait",
-                email: "ngoran.parfait@mail.com",
-                role: "utilisateur",
-                status: "inactif",
-                created_date: "2024-02-15",
-            },
-            {
-                id: 7,
-                name: "Kouakou Marc Olivier",
-                email: "kouakou.marc@email.com",
-                role: "utilisateur",
-                status: "actif",
-                created_date: "2024-03-22",
-            },
-            {
-                id: 8,
-                name: "Zossou blanchard",
-                email: "zossou.blanchard@mail.com",
-                role: "admin",
-                status: "actif",
-                created_date: "2024-01-30",
-            },
-        ];
+    // initialisation et chargement des données depuis l'API
+    async init() {
+        this.bindEvents();
+        await this.loadUsersFromAPI();
     }
 
-    // intialisation de tous les événements
-    init() {
-        this.bindEvents();
-        this.renderTable();
+    // Chargement des utilisateurs depuis l'API
+    async loadUsersFromAPI(filters = {}) {
+        try {
+            this.isLoading = true;
+            this.showLoadingState();
+
+            // Construction des parametre de la  requête
+            const params = new URLSearchParams();
+
+            if (filters.search) {
+                params.append("search", filters.search);
+            }
+            if (filters.role_id) {
+                params.append("role_id", filters.role_id);
+            }
+            if (filters.status) {
+                params.append("status", filters.status);
+            }
+            if (filters.sort_by) {
+                params.append("sort_by", filters.sort_by);
+            }
+            if (filters.sort_direction) {
+                params.append("sort_direction", filters.sort_direction);
+            }
+
+            const response = await fetch(
+                `/api/utilisateurs?${params.toString()}`,
+                {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Accept: "application/json",
+                        "X-Requested-With": "XMLHttpRequest",
+                    },
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+
+            if (result.success) {
+                // formattage des variables pour correspondre au format qui est attendu par le  front
+                this.users = result.data.map((user) => ({
+                    id: user.id,
+                    name: user.nom,
+                    email: user.email,
+                    role: user.role,
+                    role_id: user.role_id,
+                    status: user.actif,
+                    created_date: user.created_at,
+                    initials: user.initials,
+                }));
+
+                this.roles = Array.isArray(result.roles) ? result.roles : [];
+                this.filteredUsers = [...this.users];
+                this.renderTable();
+                this.populateRoleFilter();
+            } else {
+                throw new Error(
+                    result.message || "Erreur lors du chargement des données"
+                );
+            }
+        } catch (error) {
+            console.error("Erreur lors du chargement des utilisateurs:", error);
+            this.showNotification(
+                "Erreur lors du chargement des utilisateurs",
+                "error"
+            );
+            this.users = [];
+            this.filteredUsers = [];
+            this.roles = [];
+            this.renderTable();
+        } finally {
+            this.isLoading = false;
+            this.hideLoadingState();
+        }
+    }
+
+    // chargement
+    showLoadingState() {
+        const tbody = document.querySelector("#users-table tbody");
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" style="text-align: center; padding: 2rem;">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <div style="width: 20px; height: 20px; border: 2px solid #e2e8f0; border-top: 2px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                        Chargement des utilisateurs...
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+
+    // Masquage de l'état de chargement
+    hideLoadingState() {
+        // La methode renderTable() va remplacé le contenu de chargement
+    }
+
+    // chargement du filtre de rôles avec les données de l'API
+    populateRoleFilter() {
+        const roleFilter = document.getElementById("role-filter");
+        if (!roleFilter) {
+            return;
+        }
+
+        const currentValue = roleFilter.value;
+        roleFilter.innerHTML = '<option value="">Tous les rôles</option>';
+
+        if (Array.isArray(this.roles) && this.roles.length > 0) {
+            this.roles.forEach((role) => {
+                if (role && role.nom) {
+                    const option = document.createElement("option");
+                    option.value = role.id;
+                    option.textContent =
+                        role.nom.charAt(0).toUpperCase() + role.nom.slice(1);
+                    roleFilter.appendChild(option);
+                }
+            });
+        } else {
+            // Fallback avec des rôles par défaut si l'API ne retourne rien
+            const defaultRoles = [
+                { id: "admin", nom: "Administrateur" },
+                { id: "user", nom: "Utilisateur" },
+            ];
+
+            defaultRoles.forEach((role) => {
+                const option = document.createElement("option");
+                option.value = role.id;
+                option.textContent = role.nom;
+                roleFilter.appendChild(option);
+            });
+        }
+
+        // Restaurer la valeur précédente si elle existe
+        if (currentValue) {
+            roleFilter.value = currentValue;
+        }
     }
 
     // Liaison entre les événements
     bindEvents() {
-        // Action du outon d'ajout des utilisateur
+        // Action du bouton d'ajout des utilisateur
         document
             .getElementById("btn-add-user")
             .addEventListener("click", () => {
                 this.openUserModal();
             });
 
-        // recherche instantané en temps réel
+        // recherche instantané
+        let searchTimeout;
         document
             .getElementById("search-input")
             .addEventListener("input", (e) => {
-                this.filterUsers();
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.filterUsers();
+                }, 300);
             });
 
-        // Filtres
+        // règles générales de filtrage
+
         // filtre par role
         document
             .getElementById("role-filter")
@@ -133,7 +212,7 @@ class UserManager {
             this.bulkDelete();
         });
 
-        // formulaire de creation d'unutilisateur
+        // formulaire de creation d'un utilisateur
         document.getElementById("user-form").addEventListener("submit", (e) => {
             e.preventDefault();
             this.saveUser();
@@ -178,29 +257,53 @@ class UserManager {
             });
     }
 
-    // filtrage des utilisateurs
-    filterUsers() {
+    // filtrage des utilisateurs via l'API
+    async filterUsers() {
+        if (this.isLoading) return;
+
         const searchTerm = document
             .getElementById("search-input")
             .value.toLowerCase();
         const roleFilter = document.getElementById("role-filter").value;
         const statusFilter = document.getElementById("status-filter").value;
 
-        this.filteredUsers = this.users.filter((user) => {
-            const matchesSearch =
-                user.name.toLowerCase().includes(searchTerm) ||
-                user.email.toLowerCase().includes(searchTerm);
-            const matchesRole = !roleFilter || user.role === roleFilter;
-            const matchesStatus = !statusFilter || user.status === statusFilter;
+        const filters = {};
 
-            return matchesSearch && matchesRole && matchesStatus;
-        });
+        if (searchTerm) {
+            filters.search = searchTerm;
+        }
+        if (roleFilter) {
+            filters.role_id = roleFilter;
+        }
+        if (statusFilter) {
+            filters.status = statusFilter;
+        }
 
-        this.renderTable();
+        // Conserver le tri actuel
+        if (this.currentSort.field) {
+            filters.sort_by = this.mapSortFieldToAPI(this.currentSort.field);
+            filters.sort_direction = this.currentSort.direction;
+        }
+
+        await this.loadUsersFromAPI(filters);
     }
 
-    // triage des utilisateurs
-    sortUsers(field) {
+    // Mapping des champs de tri pour l'API
+    mapSortFieldToAPI(field) {
+        const mapping = {
+            name: "nom",
+            email: "email",
+            role: "role_id",
+            status: "actif",
+            created_date: "created_at",
+        };
+        return mapping[field] || field;
+    }
+
+    // triage des utilisateurs via l'API
+    async sortUsers(field) {
+        if (this.isLoading) return;
+
         if (this.currentSort.field === field) {
             this.currentSort.direction =
                 this.currentSort.direction === "asc" ? "desc" : "asc";
@@ -209,33 +312,25 @@ class UserManager {
             this.currentSort.direction = "asc";
         }
 
-        this.filteredUsers.sort((a, b) => {
-            let aVal = a[field];
-            let bVal = b[field];
+        // récupération des filtres
+        const searchTerm = document.getElementById("search-input").value;
+        const roleFilter = document.getElementById("role-filter").value;
+        const statusFilter = document.getElementById("status-filter").value;
 
-            // conversion des dates
-            if (field === "created_date") {
-                aVal = new Date(aVal);
-                bVal = new Date(bVal);
-            }
+        const filters = {
+            sort_by: this.mapSortFieldToAPI(this.currentSort.field),
+            sort_direction: this.currentSort.direction,
+        };
 
-            if (typeof aVal === "string") {
-                aVal = aVal.toLowerCase();
-                bVal = bVal.toLowerCase();
-            }
-
-            if (aVal < bVal)
-                return this.currentSort.direction === "asc" ? -1 : 1;
-            if (aVal > bVal)
-                return this.currentSort.direction === "asc" ? 1 : -1;
-            return 0;
-        });
+        if (searchTerm) filters.search = searchTerm;
+        if (roleFilter) filters.role_id = roleFilter;
+        if (statusFilter) filters.status = statusFilter;
 
         this.updateSortIndicators();
-        this.renderTable();
+        await this.loadUsersFromAPI(filters);
     }
 
-    // mise à jour des indicateurs de triage
+    // mise à jour du triage
     updateSortIndicators() {
         document.querySelectorAll(".sort-indicator").forEach((indicator) => {
             indicator.textContent = "";
@@ -245,8 +340,10 @@ class UserManager {
             const indicator = document.querySelector(
                 `th[data-sort="${this.currentSort.field}"] .sort-indicator`
             );
-            indicator.textContent =
-                this.currentSort.direction === "asc" ? "↑" : "↓";
+            if (indicator) {
+                indicator.textContent =
+                    this.currentSort.direction === "asc" ? "↑" : "↓";
+            }
         }
     }
 
@@ -254,6 +351,18 @@ class UserManager {
     renderTable() {
         const tbody = document.querySelector("#users-table tbody");
         tbody.innerHTML = "";
+
+        if (this.filteredUsers.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 2rem; color: #666;">
+                        Aucun utilisateur trouvé
+                    </td>
+                </tr>
+            `;
+            this.updateBulkActionButton();
+            return;
+        }
 
         this.filteredUsers.forEach((user) => {
             const row = this.createUserRow(user);
@@ -268,11 +377,12 @@ class UserManager {
         const row = document.createElement("tr");
         row.dataset.userId = user.id;
 
-        const initials = user.name
-            .split(" ")
-            .map((n) => n[0])
-            .join("")
-            .toUpperCase();
+        // Utiliser les initiales de l'API ou générer à partir du nom
+        const initials = user.initials || this.generateInitials(user.name);
+
+        // sécurisé les valeurs qui peut être nul
+        const roleName = user.role || "utilisateur";
+        const statusName = user.status || "inactif";
 
         row.innerHTML = `
             <td><input type="checkbox" class="user-checkbox" value="${
@@ -281,13 +391,13 @@ class UserManager {
             <td>
                 <div class="profile-pic">${initials}</div>
             </td>
-            <td>${user.name}</td>
-            <td>${user.email}</td>
-            <td><span class="role-badge ${user.role}">${
-            user.role.charAt(0).toUpperCase() + user.role.slice(1)
+            <td>${user.name || "N/A"}</td>
+            <td>${user.email || "N/A"}</td>
+            <td><span class="role-badge ${roleName}">${
+            roleName.charAt(0).toUpperCase() + roleName.slice(1)
         }</span></td>
-            <td><span class="status-badge ${user.status}">${
-            user.status.charAt(0).toUpperCase() + user.status.slice(1)
+            <td><span class="status-badge ${statusName}">${
+            statusName.charAt(0).toUpperCase() + statusName.slice(1)
         }</span></td>
             <td>${this.formatDate(user.created_date)}</td>
             <td>
@@ -306,6 +416,18 @@ class UserManager {
         `;
 
         return row;
+    }
+
+    // méthode pour générer les initiales côté client en cas de fallback
+    generateInitials(name) {
+        if (!name) return "NU";
+
+        return name
+            .split(" ")
+            .slice(0, 2) // Maximum 2 mots
+            .map((n) => n[0])
+            .join("")
+            .toUpperCase();
     }
 
     // formatage de la date
@@ -346,8 +468,49 @@ class UserManager {
             document.getElementById("user-id").value = "";
         }
 
+        // charger  le selecteur des rôles dans le formulaire
+        this.populateModalRoleSelect();
+
         modal.classList.add("active");
         overlay.classList.add("active");
+    }
+
+    // Chargement du select des rôles dans la modale
+    populateModalRoleSelect() {
+        const roleSelect = document.getElementById("user-role");
+        if (!roleSelect) return;
+
+        const currentValue = roleSelect.value;
+        roleSelect.innerHTML = "";
+
+        // vérifier si this.roles existe
+        if (Array.isArray(this.roles)) {
+            this.roles.forEach((role) => {
+                if (role && (role.nom || role.name)) {
+                    const option = document.createElement("option");
+                    const roleName = role.nom || role.name || "role";
+                    option.value = roleName.toLowerCase();
+                    option.textContent =
+                        roleName.charAt(0).toUpperCase() + roleName.slice(1);
+                    roleSelect.appendChild(option);
+                }
+            });
+        } else {
+            // Fallback avec des rôles par défaut si l'API ne retourne rien
+            const defaultRoles = [{ nom: "user" }, { nom: "admin" }];
+
+            defaultRoles.forEach((role) => {
+                const option = document.createElement("option");
+                option.value = role.nom.toLowerCase();
+                option.textContent =
+                    role.nom.charAt(0).toUpperCase() + role.nom.slice(1);
+                roleSelect.appendChild(option);
+            });
+        }
+
+        if (currentValue) {
+            roleSelect.value = currentValue;
+        }
     }
 
     // remplissage du formulaire des utilisateur
@@ -360,7 +523,7 @@ class UserManager {
     }
 
     // Sauvegarde de l'utilisateur
-    saveUser() {
+    async saveUser() {
         const formData = new FormData(document.getElementById("user-form"));
         const userData = {
             name: formData.get("name").trim(),
@@ -376,17 +539,81 @@ class UserManager {
 
         const userId = document.getElementById("user-id").value;
 
-        if (userId) {
-            // modification
-            this.updateUser(parseInt(userId), userData);
-        } else {
-            // ajout
-            this.addUser(userData);
+        try {
+            if (userId) {
+                // modification via API
+                await this.updateUserAPI(parseInt(userId), userData);
+            } else {
+                // ajout via API
+                await this.addUserAPI(userData);
+            }
+
+            this.closeModals();
+            await this.loadUsersFromAPI();
+            this.showNotification(
+                "Utilisateur enregistré avec succès",
+                "success"
+            );
+        } catch (error) {
+            console.error("Erreur lors de la sauvegarde:", error);
+            this.showNotification("Erreur lors de l'enregistrement", "error");
+        }
+    }
+
+    // ajouter d'un utilisateur via API
+    async addUserAPI(userData) {
+        const response = await fetch("/api/utilisateurs", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                "X-Requested-With": "XMLHttpRequest",
+                "X-CSRF-TOKEN": document.querySelector(
+                    'meta[name="csrf-token"]'
+                )?.content,
+            },
+            body: JSON.stringify({
+                nom: userData.name,
+                email: userData.email,
+                role: userData.role,
+                actif: userData.status === "actif",
+            }),
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || "Erreur lors de l'ajout");
         }
 
-        this.closeModals();
-        this.filterUsers();
-        this.showNotification("Utilisateur enregistré avec succès", "success");
+        return response.json();
+    }
+
+    // modification d'un utilisateur via API
+    async updateUserAPI(userId, userData) {
+        const response = await fetch(`/api/utilisateurs/${userId}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                "X-Requested-With": "XMLHttpRequest",
+                "X-CSRF-TOKEN": document.querySelector(
+                    'meta[name="csrf-token"]'
+                )?.content,
+            },
+            body: JSON.stringify({
+                nom: userData.name,
+                email: userData.email,
+                role: userData.role,
+                actif: userData.status === "actif",
+            }),
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || "Erreur lors de la modification");
+        }
+
+        return response.json();
     }
 
     // validation des données utilisateur
@@ -448,12 +675,15 @@ class UserManager {
 
     // affichage des détails d'un utilisateur
     viewUser(user) {
-        document.getElementById("detail-name").textContent = user.name;
-        document.getElementById("detail-email").textContent = user.email;
-        document.getElementById("detail-role").textContent =
-            user.role.charAt(0).toUpperCase() + user.role.slice(1);
-        document.getElementById("detail-status").textContent =
-            user.status.charAt(0).toUpperCase() + user.status.slice(1);
+        document.getElementById("detail-name").textContent = user.name || "N/A";
+        document.getElementById("detail-email").textContent =
+            user.email || "N/A";
+        document.getElementById("detail-role").textContent = user.role
+            ? user.role.charAt(0).toUpperCase() + user.role.slice(1)
+            : "Non défini";
+        document.getElementById("detail-status").textContent = user.status
+            ? user.status.charAt(0).toUpperCase() + user.status.slice(1)
+            : "Non défini";
         document.getElementById("detail-date").textContent = this.formatDate(
             user.created_date
         );
@@ -481,17 +711,78 @@ class UserManager {
     }
 
     // confirmation de suppression
-    confirmDelete() {
-        if (this.userToDelete) {
-            this.users = this.users.filter((u) => u.id !== this.userToDelete);
-            this.filterUsers();
-            this.showNotification(
-                "Utilisateur supprimé avec succès",
-                "success"
-            );
-            this.userToDelete = null;
+    async confirmDelete() {
+        try {
+            if (this.userToDelete) {
+                await this.deleteUserAPI(this.userToDelete);
+                await this.loadUsersFromAPI(); // Recharger les données
+                this.showNotification(
+                    "Utilisateur supprimé avec succès",
+                    "success"
+                );
+                this.userToDelete = null;
+            } else if (this.usersToDelete) {
+                await this.bulkDeleteAPI(this.usersToDelete);
+                await this.loadUsersFromAPI();
+                this.showNotification(
+                    `${this.usersToDelete.length} utilisateur(s) supprimé(s)`,
+                    "success"
+                );
+                this.usersToDelete = null;
+            }
+        } catch (error) {
+            console.error("Erreur lors de la suppression:", error);
+            this.showNotification("Erreur lors de la suppression", "error");
         }
+
         this.closeModals();
+    }
+
+    // Supprimé un utilisateur via API
+    async deleteUserAPI(userId) {
+        const response = await fetch(`/api/utilisateurs/${userId}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                "X-Requested-With": "XMLHttpRequest",
+                "X-CSRF-TOKEN": document.querySelector(
+                    'meta[name="csrf-token"]'
+                )?.content,
+            },
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || "Erreur lors de la suppression");
+        }
+
+        return response.json();
+    }
+
+    // Suppression groupée via API
+    async bulkDeleteAPI(userIds) {
+        const response = await fetch("/api/utilisateurs/bulk-delete", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                "X-Requested-With": "XMLHttpRequest",
+                "X-CSRF-TOKEN": document.querySelector(
+                    'meta[name="csrf-token"]'
+                )?.content,
+            },
+            body: JSON.stringify({ ids: userIds }),
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(
+                error.message || "Erreur lors de la suppression groupée"
+            );
+        }
+
+        return response.json();
     }
 
     // sélection multiple
@@ -540,22 +831,6 @@ class UserManager {
         document.getElementById("modal-overlay").classList.add("active");
 
         this.usersToDelete = selectedIds;
-    }
-
-    // confirmation suppression groupée
-    confirmBulkDelete() {
-        if (this.usersToDelete) {
-            this.users = this.users.filter(
-                (u) => !this.usersToDelete.includes(u.id)
-            );
-            this.filterUsers();
-            this.showNotification(
-                `${this.usersToDelete.length} utilisateur(s) supprimé(s)`,
-                "success"
-            );
-            this.usersToDelete = null;
-        }
-        this.closeModals();
     }
 
     // fermeture des modals
@@ -619,17 +894,24 @@ class UserManager {
     }
 }
 
-// initialisation
+// Initialisation de l'application
 document.addEventListener("DOMContentLoaded", () => {
+    // Vérifier que le token CSRF est présent
+    if (!document.querySelector('meta[name="csrf-token"]')) {
+        console.warn(
+            'Token CSRF manquant. Assurez-vous d\'avoir <meta name="csrf-token" content="{{ csrf_token() }}"'
+        );
+    }
+
     const userManager = new UserManager();
 
-    // modification de la fonction confirmDelete pour gérer les suppressions groupées
-    const originalConfirmDelete = userManager.confirmDelete;
-    userManager.confirmDelete = function () {
-        if (this.usersToDelete) {
-            this.confirmBulkDelete();
-        } else {
-            originalConfirmDelete.call(this);
+    // ajouter les styles CSS pour animation de chargement
+    const style = document.createElement("style");
+    style.textContent = `
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
-    };
+    `;
+    document.head.appendChild(style);
 });

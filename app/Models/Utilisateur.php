@@ -33,6 +33,10 @@ class utilisateur extends Model
         'updated_at' => 'datetime',
     ];
 
+   
+    /**
+     * Relation avec le modèle Role     
+     */
     public function role() {
     return $this->belongsTo(Role::class);
     }

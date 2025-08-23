@@ -242,13 +242,13 @@ tr:hover {
 }
 
 .role-badge.admin {
-    background: #fed7d7;
-    color: #c53030;
+    background: #f1cb0b;
+    color: #c56d16;
 }
 
-.role-badge.utilisateur {
-    background: #c6f6d5;
-    color: #2f855a;
+.role-badge.user {
+    background: #65cdea;
+    color: #29068a;
 }
 
 /* Status badges */
