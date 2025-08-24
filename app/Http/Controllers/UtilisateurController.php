@@ -237,7 +237,7 @@ class UtilisateurController extends Controller
             ], 200);
 
         } catch (Exception $e) {
-             \Illuminate\Support\Facades\Log::error('Erreur lors de la mise à jour de l\'utilisateur: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Erreur lors de la mise à jour de l\'utilisateur: ' . $e->getMessage());
             
             return response()->json([
                 'success' => false,
@@ -250,7 +250,7 @@ class UtilisateurController extends Controller
      * Supprimer un utilisateur
      */
 
-    public function destroy(Utilisateur $utilisateur): JsonResponse
+    public function destroy(Utilisateur $userId): JsonResponse
     {
         try {
             // vérifier si l'utilisateur tente de supprimer son propre compte
@@ -262,7 +262,7 @@ class UtilisateurController extends Controller
             // }
 
             // supprimer l'utilisateur et retourner une réponse JSON
-            $utilisateur->delete();
+            $userId->delete();
             return response()->json([
                 'success' => true,
                 'message' => 'Utilisateur supprimé avec succès'
@@ -275,6 +275,42 @@ class UtilisateurController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Supprimer plusieurs utilisateur en masse
+    */
+    public function suppressionGroupe(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:utilisateurs,id'
+        ]);
+        
+        try {
+            // Vérifier si l'utilisateur connecté est dans la liste des IDs à supprimer
+            // if (in_array(auth()->id(), $validated['ids'])) {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => 'Vous ne pouvez pas supprimer votre propre compte'
+            //     ], 403);
+            // }
+
+
+            // Supprimer les utilisateurs dont les IDs sont dans le tableau
+            $deletedCount = Utilisateur::whereIn('id', $validated['ids'])->delete();
+            return response()->json([
+                'success' => true,
+                'message' => "{$deletedCount} utilisateur(s) supprimé(s) avec succès",
+                'deleted_count' => $deletedCount
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la suppression des utilisateurs',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }    
 
     /**
      * Générer les initiales à partir du nom

@@ -15,6 +15,8 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
+
+
 // Route pour récupérer la liste des utilisateurs
 Route::get('/users', [UtilisateurController::class, 'getUsers'])->name('api.users.index');
 
@@ -25,4 +27,7 @@ Route::post('users', [UtilisateurController::class, 'enregistrer']);
 Route::put('/users/{id}', [UtilisateurController::class, 'update']);
 
 // Route pour supprimer un utilisateur
-Route::delete('/users/{utilisateur}', [UtilisateurController::class, 'destroy']);
+Route::delete('/users/{userId}', [UtilisateurController::class, 'destroy']);
+
+// Route pour supprimer plusieurs utilisateurs
+Route::post('/users/suppression-groupe', [UtilisateurController::class, 'suppressionGroupe']);

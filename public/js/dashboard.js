@@ -795,7 +795,7 @@ class UserManager {
 
     // Suppression groupée via API
     async bulkDeleteAPI(userIds) {
-        const response = await fetch("/api/users/bulk-delete", {
+        const response = await fetch("/api/users/suppression-groupe", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
