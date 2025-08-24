@@ -95,7 +95,7 @@ class UtilisateurController extends Controller
     public function enregistrer(Request $request): JsonResponse
     {       
         try {   
-                     
+            
             // validation des données recues
             $validator = Validator::make($request->all(), [
                 'nom' => 'required|string|max:255',
@@ -236,12 +236,42 @@ class UtilisateurController extends Controller
                 'message' => 'Utilisateur mis à jour avec succès',                
             ], 200);
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
              \Illuminate\Support\Facades\Log::error('Erreur lors de la mise à jour de l\'utilisateur: ' . $e->getMessage());
             
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur interne du serveur'
+            ], 500);
+        }
+    }
+
+    /**
+     * Supprimer un utilisateur
+     */
+
+    public function destroy(Utilisateur $utilisateur): JsonResponse
+    {
+        try {
+            // vérifier si l'utilisateur tente de supprimer son propre compte
+            // if ($utilisateur->id === auth()->id()) {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => 'Vous ne pouvez pas supprimer votre propre compte'
+            //     ], 403);
+            // }
+
+            // supprimer l'utilisateur et retourner une réponse JSON
+            $utilisateur->delete();
+            return response()->json([
+                'success' => true,
+                'message' => 'Utilisateur supprimé avec succès'
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la suppression de l\'utilisateur',
+                'error' => $e->getMessage()
             ], 500);
         }
     }

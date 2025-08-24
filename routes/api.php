@@ -23,3 +23,6 @@ Route::post('users', [UtilisateurController::class, 'enregistrer']);
 
 // Route pour mettre à jour un utilisateur existant
 Route::put('/users/{id}', [UtilisateurController::class, 'update']);
+
+// Route pour supprimer un utilisateur
+Route::delete('/users/{utilisateur}', [UtilisateurController::class, 'destroy']);
