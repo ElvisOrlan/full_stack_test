@@ -54,17 +54,19 @@ class UtilisateurController extends Controller
         $sortDirection = $request->get('sort_direction', 'desc');  
         $query->orderBy($sortField, $sortDirection);
         
-        $utilisateurs = $query->get();
+        // Pagination
+        $perPage = $request->get('per_page', 10);
+        $paginatedUsers = $query->paginate($perPage);
         
         // Formatage pour le frontend
-        $data = $utilisateurs->map(function ($user) {
-            $roleName = $user->role->nom_role; // Valeur par défaut
+        $data = $paginatedUsers->getCollection()->map(function ($user) {
+            $roleName = $user->role->nom_role;
             
             return [
                 'id' => $user->id,
                 'nom' => $user->nom,
                 'email' => $user->email,
-                'role' => $roleName, // Toujours une chaîne
+                'role' => $roleName, 
                 'role_id' => $user->role_id,
                 'actif' => $user->actif ? 'actif' : 'inactif',
                 'created_at' => $user->created_at->format('Y-m-d'),
@@ -84,8 +86,16 @@ class UtilisateurController extends Controller
         return response()->json([
             'success' => true,
             'data' => $data,
-            'total' => $data->count(),
-            'roles' => $roles
+            'total' => $paginatedUsers->total(),
+            'roles' => $roles,
+            'pagination' => [
+                'current_page' => $paginatedUsers->currentPage(),
+                'per_page' => $paginatedUsers->perPage(),
+                'total' => $paginatedUsers->total(),
+                'last_page' => $paginatedUsers->lastPage(),
+                'from' => $paginatedUsers->firstItem(),
+                'to' => $paginatedUsers->lastItem()
+            ]
         ]);
     }
 

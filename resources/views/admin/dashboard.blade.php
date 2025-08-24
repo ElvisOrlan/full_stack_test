@@ -74,11 +74,11 @@
                                 <input type="checkbox" class="select-all-checkbox">
                             </th>
                             <th>Photo</th>
-                            <th data-sort="nom">Nom <span class="sort-indicator"></span></th>
+                            <th data-sort="name">Nom <span class="sort-indicator"></span></th>
                             <th data-sort="email">Email <span class="sort-indicator"></span></th>
                             <th data-sort="role">Rôle <span class="sort-indicator"></span></th>
-                            <th data-sort="actif">Statut <span class="sort-indicator"></span></th>
-                            <th data-sort="created_at">Date de création <span class="sort-indicator"></span></th>
+                            <th data-sort="status">Statut <span class="sort-indicator"></span></th>
+                            <th data-sort="created_date">Date de création <span class="sort-indicator"></span></th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -90,12 +90,8 @@
                 </table>
             </div>
 
-            <!-- Pagination -->
-            <div class="pagination">
-                <button class="btn-page" id="prev-page" disabled>Précédent</button>
-                <span class="page-info">Page 1 sur 1</span>
-                <button class="btn-page" id="next-page" disabled>Suivant</button>
-            </div>
+            <!-- Pagination remplacée par le nouveau système -->
+            <div id="pagination-container"></div>
         </div>
     </main>
 
@@ -159,54 +155,6 @@
         </div>
     </div>
 
-    <!-- Modal de modification d'utilisateur -->
-    <!-- <div id="user-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modal-title">Ajouter un utilisateur</h2>
-                <button class="modal-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="user-form">
-                    <input type="hidden" id="user-id">
-                    
-                    <div class="form-group">
-                        <label for="user-name">Nom complet *</label>
-                        <input type="text" id="user-name" name="name" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="user-email">Email *</label>
-                        <input type="email" id="user-email" name="email" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="user-role">Rôle *</label>
-                        <select id="user-role" name="role" required>
-                            <option value="">Sélectionner un rôle</option>
-                            <option value="admin">Admin</option>
-                            <option value="utilisateur">Utilisateur</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="user-status">Statut *</label>
-                        <select id="user-status" name="status" required>
-                            <option value="">Sélectionner un statut</option>
-                            <option value="actif">Actif</option>
-                            <option value="inactif">Inactif</option>
-                        </select>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="button" class="btn-secondary" id="cancel-btn">Annuler</button>
-                        <button type="submit" class="btn-primary" id="save-btn">Enregistrer</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div> -->
-
     <!-- Modal de confirmation de suppression -->
     <div id="delete-modal" class="modal">
         <div class="modal-content small">
@@ -269,7 +217,7 @@
         const confirmInput = document.getElementById('user-password-confirmation');
         const form = document.getElementById('user-form');
 
-        // Création d’un petit message d’erreur
+        // Création d'un petit message d'erreur
         const errorMsg = document.createElement('small');
         errorMsg.style.color = 'red';
         confirmInput.parentNode.appendChild(errorMsg);
@@ -296,7 +244,7 @@
         form.addEventListener('submit', function (e) {
             validatePasswordMatch();
             if (!form.checkValidity()) {
-            e.preventDefault(); // Empêche l’envoi si validation échoue
+            e.preventDefault(); // Empêche l'envoi si validation échoue
             }
         });
     </script>

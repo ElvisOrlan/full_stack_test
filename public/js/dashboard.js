@@ -6,6 +6,14 @@ class UserManager {
         this.currentSort = { field: null, direction: "asc" };
         this.roles = [];
         this.isLoading = false;
+        this.pagination = {
+            current_page: 1,
+            per_page: 10,
+            total: 0,
+            last_page: 1,
+            from: 0,
+            to: 0,
+        };
         this.init();
     }
 
@@ -40,6 +48,14 @@ class UserManager {
                 params.append("sort_direction", filters.sort_direction);
             }
 
+            // Ajout des paramètres de pagination
+            if (filters.page) {
+                params.append("page", filters.page);
+            }
+            if (filters.per_page) {
+                params.append("per_page", filters.per_page);
+            }
+
             const response = await fetch(`/api/users?${params.toString()}`, {
                 method: "GET",
                 headers: {
@@ -70,8 +86,15 @@ class UserManager {
 
                 this.roles = Array.isArray(result.roles) ? result.roles : [];
                 this.filteredUsers = [...this.users];
+
+                // Mise à jour des informations de pagination
+                if (result.pagination) {
+                    this.pagination = result.pagination;
+                }
+
                 this.renderTable();
                 this.populateRoleFilter();
+                this.renderPagination(); // Rendu de la pagination
             } else {
                 throw new Error(
                     result.message || "Erreur lors du chargement des données"
@@ -170,6 +193,7 @@ class UserManager {
             .addEventListener("input", (e) => {
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(() => {
+                    this.resetToFirstPage();
                     this.filterUsers();
                 }, 300);
             });
@@ -180,6 +204,7 @@ class UserManager {
         document
             .getElementById("role-filter")
             .addEventListener("change", () => {
+                this.resetToFirstPage();
                 this.filterUsers();
             });
 
@@ -187,6 +212,7 @@ class UserManager {
         document
             .getElementById("status-filter")
             .addEventListener("change", () => {
+                this.resetToFirstPage();
                 this.filterUsers();
             });
 
@@ -194,6 +220,7 @@ class UserManager {
         document.querySelectorAll("th[data-sort]").forEach((th) => {
             th.addEventListener("click", () => {
                 const field = th.dataset.sort;
+                this.resetToFirstPage();
                 this.sortUsers(field);
             });
         });
@@ -254,6 +281,11 @@ class UserManager {
             });
     }
 
+    // Réinitialiser à la première page
+    resetToFirstPage() {
+        this.pagination.current_page = 1;
+    }
+
     // filtrage des utilisateurs via l'API
     async filterUsers() {
         if (this.isLoading) return;
@@ -264,7 +296,10 @@ class UserManager {
         const roleFilter = document.getElementById("role-filter").value;
         const statusFilter = document.getElementById("status-filter").value;
 
-        const filters = {};
+        const filters = {
+            page: this.pagination.current_page,
+            per_page: this.pagination.per_page,
+        };
 
         if (searchTerm) {
             filters.search = searchTerm;
@@ -317,6 +352,8 @@ class UserManager {
         const filters = {
             sort_by: this.mapSortFieldToAPI(this.currentSort.field),
             sort_direction: this.currentSort.direction,
+            page: this.pagination.current_page,
+            per_page: this.pagination.per_page,
         };
 
         if (searchTerm) filters.search = searchTerm;
@@ -342,6 +379,93 @@ class UserManager {
                     this.currentSort.direction === "asc" ? "↑" : "↓";
             }
         }
+    }
+
+    // Navigation vers une page spécifique
+    async goToPage(page) {
+        if (page < 1 || page > this.pagination.last_page || this.isLoading) {
+            return;
+        }
+
+        this.pagination.current_page = page;
+        await this.filterUsers();
+    }
+
+    // Rendu de la pagination
+    renderPagination() {
+        const paginationContainer = document.getElementById(
+            "pagination-container"
+        );
+        if (!paginationContainer) {
+            return;
+        }
+
+        const { current_page, last_page, from, to, total } = this.pagination;
+
+        if (last_page <= 1) {
+            paginationContainer.innerHTML = "";
+            return;
+        }
+
+        let paginationHTML = `
+            <div class="pagination-info">
+                Affichage de ${from} à ${to} sur ${total} utilisateurs
+            </div>
+            <div class="pagination-controls">
+        `;
+
+        // Bouton précédent
+        if (current_page > 1) {
+            paginationHTML += `
+                <button class="pagination-btn" onclick="userManager.goToPage(${
+                    current_page - 1
+                })">
+                    ‹ Précédent
+                </button>
+            `;
+        }
+
+        // Numéros de pages
+        const startPage = Math.max(1, current_page - 2);
+        const endPage = Math.min(last_page, current_page + 2);
+
+        if (startPage > 1) {
+            paginationHTML += `<button class="pagination-btn" onclick="userManager.goToPage(1)">1</button>`;
+            if (startPage > 2) {
+                paginationHTML += `<span class="pagination-dots">...</span>`;
+            }
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            const activeClass = i === current_page ? "active" : "";
+            paginationHTML += `
+                <button class="pagination-btn ${activeClass}" onclick="userManager.goToPage(${i})">
+                    ${i}
+                </button>
+            `;
+        }
+
+        if (endPage < last_page) {
+            if (endPage < last_page - 1) {
+                paginationHTML += `<span class="pagination-dots">...</span>`;
+            }
+            paginationHTML += `<button class="pagination-btn" onclick="userManager.goToPage(${last_page})">${last_page}</button>`;
+        }
+
+        // Bouton suivant
+        if (current_page < last_page) {
+            paginationHTML += `
+                <button class="pagination-btn" onclick="userManager.goToPage(${
+                    current_page + 1
+                })">
+                    Suivant ›
+                </button>
+            `;
+        }
+
+        paginationHTML += `</div>`;
+
+        paginationContainer.innerHTML = paginationHTML;
     }
 
     // rendu de l'affichage du tableau
@@ -927,6 +1051,9 @@ class UserManager {
     }
 }
 
+// Variable globale pour accéder à l'instance depuis les boutons de pagination
+let userManager;
+
 // Initialisation de l'application
 document.addEventListener("DOMContentLoaded", () => {
     // Vérifier que le token CSRF est présent
@@ -936,14 +1063,79 @@ document.addEventListener("DOMContentLoaded", () => {
         );
     }
 
-    const userManager = new UserManager();
+    userManager = new UserManager();
 
-    // ajouter les styles CSS pour animation de chargement
+    // ajouter les styles CSS pour animation de chargement et pagination
     const style = document.createElement("style");
     style.textContent = `
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+        
+        /* Styles de pagination */
+        #pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+            padding: 1rem 0;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .pagination-info {
+            font-size: 0.875rem;
+            color: #666;
+        }
+        
+        .pagination-controls {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        
+        .pagination-btn {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #d1d5db;
+            background: white;
+            color: #374151;
+            cursor: pointer;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        
+        .pagination-btn:hover {
+            background-color: #f9fafb;
+            border-color: #9ca3af;
+        }
+        
+        .pagination-btn.active {
+            background-color: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+        
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .pagination-dots {
+            padding: 0 0.25rem;
+            color: #9ca3af;
+        }
+        
+        @media (max-width: 768px) {
+            #pagination-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .pagination-controls {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
         }
     `;
     document.head.appendChild(style);
