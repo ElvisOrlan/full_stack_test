@@ -122,13 +122,13 @@
 
                     <div class="form-group" style="position: relative;">
                         <label for="user-password">Mot de passe *</label>
-                        <input type="password" id="user-password" name="password" required>
+                        <input type="password" id="user-password" name="password">
                         <span class="toggle-password" data-target="user-password">Afficher</span>
                         </div>
 
                         <div class="form-group" style="position: relative;">
                         <label for="user-password-confirmation">Confirmation du mot de passe *</label>
-                        <input type="password" id="user-password-confirmation" name="password-confirmation" required>
+                        <input type="password" id="user-password-confirmation" name="password-confirmation">
                         <span class="toggle-password" data-target="user-password-confirmation">Afficher</span>
                     </div>
 

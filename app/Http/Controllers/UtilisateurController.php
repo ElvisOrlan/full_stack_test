@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+
 use Exception;
 
 class UtilisateurController extends Controller
@@ -93,12 +94,13 @@ class UtilisateurController extends Controller
      */
     public function enregistrer(Request $request): JsonResponse
     {       
-        try {             
+        try {   
+                     
             // validation des données recues
             $validator = Validator::make($request->all(), [
                 'nom' => 'required|string|max:255',
-                'email' => 'required|string|max:255|unique:utilisateurs',
-                'password' => 'required|string',
+                'email' => 'required|email|max:255|unique:utilisateurs',
+                'password' => 'required|string|min:8',
                 'role' => 'required|string|in:admin,user',
                 'actif' => 'required|boolean'
             ]);
@@ -149,6 +151,100 @@ class UtilisateurController extends Controller
         }
     }   
 
+
+    /**
+     * Mettre à jour un utilisateur existant
+     */
+    public function update(Request $request, int $id): JsonResponse
+    {
+        try {
+            // Recherche de l'utilisateur
+            $user = Utilisateur::find($id);
+            
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Utilisateur non trouvé'
+                ], 404);
+            }
+
+            // règles de validation
+            $rules = [
+                'nom' => 'required|string|max:255',
+                'email' => 'required|email|max:255|unique:utilisateurs,email,' . $id,
+                'role' => 'required|string|in:admin,user',
+                'actif' => 'required|boolean'
+            ];
+
+            // validation conditionnelle du mot de passe
+            if ($request->filled('password')) {
+                $rules['password'] = 'string|min:8';
+            }
+
+            // M*messages de validation
+            $messages = [
+                'nom.required' => 'Le nom est obligatoire',
+                'email.required' => 'L\'email est obligatoire',
+                'email.email' => 'L\'email doit être valide',
+                'email.unique' => 'Cette adresse email est déjà utilisée',
+                'role.required' => 'Le rôle est obligatoire',
+                'role.in' => 'Le rôle doit être admin (1) ou user (2)',
+                'actif.required' => 'Le statut est obligatoire',
+                'actif.boolean' => 'Le statut doit être actif ou inactif',
+                'password.min' => 'Le mot de passe doit contenir au moins 8 caractères',
+                'password.confirmed' => 'La confirmation du mot de passe ne correspond pas'
+            ];
+
+            // validation des données
+            $validator = Validator::make($request->all(), $rules, $messages);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erreurs de validation',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Mapping du rôle nom vers ID
+            $roleMapping = ['admin' => 1, 'user' => 2];
+            $roleId = $roleMapping[$request->role] ?? 2;
+
+            // Préparation des données à mettre à jour
+            $updateData = [
+                'nom' => $request->nom,
+                'email' => $request->email,
+                'role_id' => $roleId,
+                'actif' => $request->actif
+            ];
+
+            // Mise à jour du mot de passe si fourni
+            if ($request->filled('password')) {
+                $updateData['password'] = Hash::make($request->password);
+            }
+
+            // Mise à jour de l'utilisateur
+            $user->update($updateData);
+
+            // Rechargement de l'utilisateur
+            $user = Utilisateur::find($id);
+
+            $roleNames = [1 => 'admin', 2 => 'user'];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Utilisateur mis à jour avec succès',                
+            ], 200);
+
+        } catch (\Exception $e) {
+             \Illuminate\Support\Facades\Log::error('Erreur lors de la mise à jour de l\'utilisateur: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur interne du serveur'
+            ], 500);
+        }
+    }
 
     /**
      * Générer les initiales à partir du nom
