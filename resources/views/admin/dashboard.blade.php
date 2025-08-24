@@ -90,7 +90,7 @@
                 </table>
             </div>
 
-            <!-- Pagination remplacée par le nouveau système -->
+            <!-- Pagination -->
             <div id="pagination-container"></div>
         </div>
     </main>
@@ -244,10 +244,12 @@
         form.addEventListener('submit', function (e) {
             validatePasswordMatch();
             if (!form.checkValidity()) {
-            e.preventDefault(); // Empêche l'envoi si validation échoue
+            e.preventDefault();
             }
         });
     </script>
+
+    <!-- afficher ou masquer mot de passe -->
     <script>
         document.querySelectorAll('.toggle-password').forEach(function (eyeIcon) {
             eyeIcon.addEventListener('click', function () {

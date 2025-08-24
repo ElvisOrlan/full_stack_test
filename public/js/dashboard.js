@@ -56,11 +56,13 @@ class UserManager {
                 params.append("per_page", filters.per_page);
             }
 
+            const token = localStorage.getItem("token");
             const response = await fetch(`/api/users?${params.toString()}`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
                     Accept: "application/json",
+                    Authorization: `Bearer ${token}`,
                     "X-Requested-With": "XMLHttpRequest",
                 },
             });

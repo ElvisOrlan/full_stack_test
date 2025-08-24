@@ -13,6 +13,13 @@ use Exception;
 
 class UtilisateurController extends Controller
 {
+
+
+     public function connexion()
+    {
+        // retourne la vue de connexion
+        return view('admin.connexion');
+    }
     /**
      * appelle de la vue dashboard chargé de la liste des utilisateurs et leurs roles
      */
@@ -342,4 +349,7 @@ class UtilisateurController extends Controller
         
         return $initials ?: 'NU';
     }
-    }
+
+    
+   
+}
