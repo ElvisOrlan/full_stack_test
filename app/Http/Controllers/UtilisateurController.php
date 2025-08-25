@@ -62,7 +62,7 @@ class UtilisateurController extends Controller
         $query->orderBy($sortField, $sortDirection);
         
         // Pagination
-        $perPage = $request->get('per_page', 10);
+        $perPage = $request->get('per_page', 5);
         $paginatedUsers = $query->paginate($perPage);
         
         // Formatage pour le frontend
