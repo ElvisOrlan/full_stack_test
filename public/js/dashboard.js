@@ -1,4 +1,4 @@
-// gestionnaire des utilisateurs et des actions
+// gestion des utilisateurs et des actions
 class UserManager {
     constructor() {
         this.users = [];
@@ -14,13 +14,145 @@ class UserManager {
             from: 0,
             to: 0,
         };
+
+        // Initialisation du role de l'utilisateur connecté
+        this.currentUserRole = null;
+
+        // Initialisation des informations complètes de l'utilisateur connecté
+        this.currentUser = {
+            id: null,
+            name: null,
+            email: null,
+            role: null,
+        };
+
+        // initialisation des variables de suppression
+        this.userToDelete = null;
+        this.usersToDelete = null;
+
+        // Récupération du rôle de l'utilisateur à l'initialisation
+        this.getCurrentUserRole();
+
         this.init();
     }
 
     // initialisation et chargement des données depuis l'API
     async init() {
-        this.bindEvents();
-        await this.loadUsersFromAPI();
+        try {
+            // Vérification supplémentaire d'authentification
+            if (this.redirectToLoginIfNotAuthenticated()) {
+                return;
+            }
+            this.bindEvents();
+            await this.loadUsersFromAPI();
+
+            // Appliquer les restrictions selon le rôle après chargement
+            this.applyRoleRestrictions();
+        } catch (error) {
+            this.showNotification(
+                "Erreur lors de l'initialisation de l'interface",
+                "error"
+            );
+        }
+    }
+
+    // Applique les restrictions d'interface selon le rôle utilisateur
+    applyRoleRestrictions() {
+        const addButton = document.getElementById("btn-add-user");
+        const bulkDeleteButton = document.getElementById("bulk-delete");
+        const selectAllCheckbox = document.getElementById("select-all");
+        const editButtons = document.querySelectorAll('[data-action="edit"]');
+        const deleteButtons = document.querySelectorAll(
+            '[data-action="delete"]'
+        );
+
+        // si l'utilisateur n'est pas admin
+        if (!this.isAdmin()) {
+            // masquer le bouton d'ajout
+            if (addButton) {
+                addButton.style.display = "none";
+            }
+
+            // masquer les actions de suppression groupée
+            if (bulkDeleteButton) {
+                bulkDeleteButton.style.display = "none";
+            }
+
+            // desactiver tous les boutons d'édition
+            editButtons.forEach((btn) => {
+                btn.disabled = true;
+            });
+
+            // desactiver tous les boutons de suppression
+            deleteButtons.forEach((btn) => {
+                btn.disabled = true;
+            });
+        } else {
+            // Pour les admins, tout est visible
+
+            if (addButton) addButton.style.display = "block";
+            if (bulkDeleteButton) bulkDeleteButton.style.display = "block";
+            if (selectAllCheckbox) selectAllCheckbox.style.display = "block";
+
+            const selectColumn = document.querySelector("th:first-child");
+            if (selectColumn) {
+                selectColumn.style.display = "table-cell";
+            }
+            // Réafficher tous les boutons d'édition
+            editButtons.forEach((btn) => {
+                btn.disabled = false;
+            });
+
+            // Réafficher tous les boutons de suppression
+            deleteButtons.forEach((btn) => {
+                btn.disabled = false;
+            });
+
+            document.body.classList.add("admin-role");
+        }
+    }
+
+    // Désactive complètement l'interface en cas de problème d'authentification
+    disableAllInterface() {
+        // Désactiver tous les boutons
+        document.querySelectorAll("button").forEach((btn) => {
+            btn.disabled = true;
+            btn.style.opacity = "0.5";
+        });
+
+        // Désactiver tous les inputs
+        document.querySelectorAll("input, select").forEach((input) => {
+            input.disabled = true;
+            input.style.opacity = "0.5";
+        });
+
+        // Afficher un message dans le tableau
+        const tbody = document.querySelector("#users-table tbody");
+        if (tbody) {
+            tbody.innerHTML = `
+            <tr>
+                <td colspan="8" style="text-align: center; padding: 2rem; color: #dc2626;">
+                    ⚠️ Session expirée. Redirection en cours...
+                </td>
+            </tr>
+        `;
+        }
+    }
+
+    // Gestion du cas utilisateur non authentifié
+    handleUnauthenticated() {
+        this.showNotification(
+            "Session expirée. Redirection vers la page de connexion...",
+            "error"
+        );
+
+        this.clearUserData();
+
+        setTimeout(() => {
+            this.redirectToLoginIfNotAuthenticated();
+        }, 5000);
+
+        this.disableAllInterface();
     }
 
     // Chargement des utilisateurs depuis l'API
@@ -56,13 +188,13 @@ class UserManager {
                 params.append("per_page", filters.per_page);
             }
 
-            const token = localStorage.getItem("token");
+            const jwtToken = localStorage.getItem("token");
             const response = await fetch(`/api/users?${params.toString()}`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
                     Accept: "application/json",
-                    Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${jwtToken}`,
                     "X-Requested-With": "XMLHttpRequest",
                 },
             });
@@ -96,7 +228,7 @@ class UserManager {
 
                 this.renderTable();
                 this.populateRoleFilter();
-                this.renderPagination(); // Rendu de la pagination
+                this.renderPagination();
             } else {
                 throw new Error(
                     result.message || "Erreur lors du chargement des données"
@@ -135,7 +267,7 @@ class UserManager {
 
     // Masquage de l'état de chargement
     hideLoadingState() {
-        // La methode renderTable() va remplacé le contenu de chargement
+        //le table sera rendu par le renderTable
     }
 
     // chargement du filtre de rôles avec les données de l'API
@@ -161,8 +293,8 @@ class UserManager {
         } else {
             // Fallback avec des rôles par défaut si l'API ne retourne rien
             const defaultRoles = [
-                { id: "admin", nom: "Administrateur" },
-                { id: "user", nom: "Utilisateur" },
+                { id: "1", nom: "admin" },
+                { id: "2", nom: "User" },
             ];
 
             defaultRoles.forEach((role) => {
@@ -504,7 +636,7 @@ class UserManager {
         const initials = user.initials || this.generateInitials(user.name);
 
         // sécurisé les valeurs qui peut être nul
-        const roleName = user.role || "utilisateur";
+        const roleName = user.role || "user";
         const statusName = user.status || "inactif";
 
         row.innerHTML = `
@@ -591,7 +723,6 @@ class UserManager {
             document.getElementById("user-id").value = "";
         }
 
-        // charger  le selecteur des rôles dans le formulaire
         this.populateModalRoleSelect();
 
         modal.classList.add("active");
@@ -687,15 +818,15 @@ class UserManager {
 
     // ajouter d'un utilisateur via API
     async addUserAPI(userData) {
+        const jwtToken = localStorage.getItem("token");
+
         const response = await fetch("/api/users", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 Accept: "application/json",
+                Authorization: `Bearer ${jwtToken}`,
                 "X-Requested-With": "XMLHttpRequest",
-                "X-CSRF-TOKEN": document.querySelector(
-                    'meta[name="csrf-token"]'
-                )?.content,
             },
             body: JSON.stringify({
                 nom: userData.name,
@@ -716,15 +847,14 @@ class UserManager {
 
     // modification d'un utilisateur via API
     async updateUserAPI(userId, userData) {
+        const jwtToken = localStorage.getItem("token");
         const response = await fetch(`/api/users/${userId}`, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",
                 Accept: "application/json",
+                Authorization: `Bearer ${jwtToken}`,
                 "X-Requested-With": "XMLHttpRequest",
-                "X-CSRF-TOKEN": document.querySelector(
-                    'meta[name="csrf-token"]'
-                )?.content,
             },
             body: JSON.stringify({
                 nom: userData.name,
@@ -899,15 +1029,14 @@ class UserManager {
 
     // Supprimé un utilisateur via API
     async deleteUserAPI(userId) {
+        const jwtToken = localStorage.getItem("token");
         const response = await fetch(`/api/users/${userId}`, {
             method: "DELETE",
             headers: {
                 "Content-Type": "application/json",
                 Accept: "application/json",
+                Authorization: `Bearer ${jwtToken}`,
                 "X-Requested-With": "XMLHttpRequest",
-                "X-CSRF-TOKEN": document.querySelector(
-                    'meta[name="csrf-token"]'
-                )?.content,
             },
         });
 
@@ -921,15 +1050,15 @@ class UserManager {
 
     // Suppression groupée via API
     async bulkDeleteAPI(userIds) {
+        const jwtToken = localStorage.getItem("token");
+
         const response = await fetch("/api/users/suppression-groupe", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 Accept: "application/json",
+                Authorization: `Bearer ${jwtToken}`,
                 "X-Requested-With": "XMLHttpRequest",
-                "X-CSRF-TOKEN": document.querySelector(
-                    'meta[name="csrf-token"]'
-                )?.content,
             },
             body: JSON.stringify({ ids: userIds }),
         });
@@ -1051,14 +1180,251 @@ class UserManager {
             }, 300);
         }, 3000);
     }
+
+    // Décodage du token JWT
+    decodeJWTToken(token = null) {
+        try {
+            // Utiliser le token récupérer depuis localStorage
+            const jwtToken = localStorage.getItem("token");
+
+            if (!jwtToken) {
+                console.warn("Aucun token JWT trouvé");
+                return null;
+            }
+
+            // Séparer les parties du token JWT (header.payload.signature)
+            const tokenParts = jwtToken.split(".");
+
+            if (tokenParts.length !== 3) {
+                console.error("Format de token JWT invalide");
+                return null;
+            }
+
+            // Décoder la partie payload (base64)
+            const payload = tokenParts[1];
+
+            // Ajouter le padding nécessaire pour base64
+            const paddedPayload =
+                payload + "=".repeat((4 - (payload.length % 4)) % 4);
+
+            // Décoder et parser le JSON
+            const decodedPayload = JSON.parse(atob(paddedPayload));
+
+            // Vérifier l'expiration du token
+            if (
+                decodedPayload.exp &&
+                decodedPayload.exp < Math.floor(Date.now() / 1000)
+            ) {
+                console.warn("Token JWT expiré");
+
+                localStorage.removeItem("token");
+                return null;
+            }
+
+            return decodedPayload;
+        } catch (error) {
+            console.error("Erreur lors du décodage du token JWT:", error);
+            return null;
+        }
+    }
+
+    // Récupération du rôle utilisateur actuel à partir du token JWT
+    getCurrentUserRole() {
+        try {
+            const tokenData = this.decodeJWTToken();
+
+            if (!tokenData) {
+                console.warn("Impossible de récupérer les données utilisateur");
+                return null;
+            }
+
+            // Extraire le rôle selon la structure de votre JWT
+            const userRole_id = tokenData.role_id || null;
+
+            let userRole = null;
+
+            if (userRole_id === 1) {
+                userRole = "admin";
+            } else if (userRole_id === 2) {
+                userRole = "user";
+            } else {
+                userRole = "null";
+            }
+
+            // Stocker le rôle et autres infos utilisateur
+            this.currentUserRole = userRole ? userRole.toLowerCase() : null;
+            this.currentUser = {
+                id: tokenData.id,
+                name: tokenData.nom,
+                email: tokenData.email,
+                role: this.currentUserRole,
+            };
+
+            return this.currentUserRole;
+        } catch (error) {
+            console.error(
+                "Erreur lors de la récupération du rôle utilisateur:",
+                error
+            );
+            return null;
+        }
+    }
+
+    /**
+     * Vérifie si l'utilisateur a les permissions pour effectuer une action
+     */
+    checkPermission(action) {
+        // Si le rôle n'est pas défini, refuser toutes les actions sauf 'read'
+        if (!this.currentUserRole) {
+            return action === "read" || action === "view";
+        }
+
+        // Définition des permissions par rôle
+        const permissions = {
+            admin: {
+                create: true,
+                read: true,
+                update: true,
+                delete: true,
+                bulk_delete: true,
+                view: true,
+                manage_users: true,
+            },
+            user: {
+                create: false,
+                read: true,
+                update: false,
+                delete: false,
+                bulk_delete: false,
+                view: true,
+                manage_users: false,
+            },
+        };
+
+        // Récupérer les permissions pour le rôle actuel
+        const rolePermissions = permissions[this.currentUserRole.toLowerCase()];
+
+        if (!rolePermissions) {
+            console.warn(`Rôle non reconnu: ${this.currentUserRole}`);
+            // Par défaut, donner seulement les permissions de lecture
+            return action === "read" || action === "view";
+        }
+
+        // Vérifier si l'action est autorisée
+        const isAllowed = rolePermissions[action] || false;
+
+        if (!isAllowed) {
+            console.warn(
+                `Action '${action}' non autorisée pour le rôle '${this.currentUserRole}'`
+            );
+        }
+        return isAllowed;
+    }
+
+    /**
+     * Vérifie si l'utilisateur connecté est administrateur
+     */
+    isAdmin() {
+        return (
+            this.currentUserRole &&
+            this.currentUserRole.toLowerCase() === "admin"
+        );
+    }
+
+    /**
+     * Vérifie si l'utilisateur est authentifié et a un rôle valide
+     */
+    isAuthenticated() {
+        const tokenData = this.decodeJWTToken();
+        return tokenData !== null && this.currentUserRole !== null;
+    }
+
+    /**
+     * Redirige vers la page de connexion si l'utilisateur n'est pas authentifié
+     */
+    redirectToLoginIfNotAuthenticated() {
+        if (!this.isAuthenticated()) {
+            console.warn(
+                "Utilisateur non authentifié, redirection vers la page de connexion"
+            );
+            window.location.href = "/";
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Affiche une notification d'accès refusé
+     */
+    showAccessDeniedNotification(action = "") {
+        const message = action
+            ? `Accès refusé: vous n'avez pas les permissions pour ${action}`
+            : "Accès refusé: permissions insuffisantes";
+
+        this.showNotification(message, "error");
+    }
+
+    /**
+     * Nettoie les données utilisateur (déconnexion)
+     */
+    clearUserData() {
+        this.currentUserRole = null;
+        this.currentUser = null;
+        localStorage.removeItem("token");
+    }
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+    const logoutButton = document.getElementById("btn-logout");
+
+    if (logoutButton) {
+        logoutButton.addEventListener("click", async () => {
+            const jwtToken = localStorage.getItem("token");
+
+            if (!jwtToken) {
+                console.warn(
+                    "Aucun token trouvé. Redirection vers la page de connexion."
+                );
+                window.location.href = "/";
+                return;
+            }
+
+            try {
+                const response = await fetch("/api/logout", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Accept: "application/json",
+                        Authorization: `Bearer ${jwtToken}`,
+                        "X-Requested-With": "XMLHttpRequest",
+                    },
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error(
+                        "Erreur lors de la déconnexion:",
+                        errorData.message || "Erreur inconnue"
+                    );
+                    return;
+                }
+
+                // Nettoyer le token et rediriger
+                localStorage.removeItem("token");
+                clearUserData();
+                console.log("Déconnexion réussie. Redirection...");
+                window.location.href = "/"; // ou page d'accueil
+            } catch (error) {
+                console.error("Erreur réseau lors de la déconnexion:", error);
+            }
+        });
+    }
+});
 
 // Variable globale pour accéder à l'instance depuis les boutons de pagination
 let userManager;
 
-// Initialisation de l'application
 document.addEventListener("DOMContentLoaded", () => {
-    // Vérifier que le token CSRF est présent
     if (!document.querySelector('meta[name="csrf-token"]')) {
         console.warn(
             'Token CSRF manquant. Assurez-vous d\'avoir <meta name="csrf-token" content="{{ csrf_token() }}"'
@@ -1067,7 +1433,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     userManager = new UserManager();
 
-    // ajouter les styles CSS pour animation de chargement et pagination
+    // styles CSS pour animation de chargement et pagination
+
     const style = document.createElement("style");
     style.textContent = `
         @keyframes spin {
@@ -1139,6 +1506,56 @@ document.addEventListener("DOMContentLoaded", () => {
                 justify-content: center;
             }
         }
+
+
+.user-role-restricted .user-checkbox {
+    display: none !important;
+}
+
+.user-role-restricted th:first-child,
+.user-role-restricted td:first-child {
+    display: none !important;
+}
+
+.btn-action:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.role-restricted {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Indicateur visuel pour les admins */
+.admin-role::before {
+    content: "👑 Administrateur";
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    background: #059669;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    z-index: 9999;
+}
+
+/* Indicateur visuel pour les utilisateurs */
+.user-role-restricted::before {
+    content: "👤 Utilisateur";
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    background: #0369a1;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    z-index: 9999;
+}
+
     `;
     document.head.appendChild(style);
 });

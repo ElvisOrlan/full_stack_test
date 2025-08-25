@@ -12,13 +12,17 @@ use App\Http\Controllers\AuthController;
 |
 */
 
-
+// route pour l'authentification
 Route::post('/login', [AuthController::class, 'login']);
+
+// Route pour récupérer la liste des roles
+Route::get('/roles', [UtilisateurController::class, 'getRoles'])->name('api.users.roles');
+
+// Route pour récupérer les informations de l'utilisateur authentifié
 Route::middleware('auth:api')->get('/me', [AuthController::class, 'me']);
+
+// Route pour la déconnexion
 Route::middleware('auth:api')->post('/logout', [AuthController::class, 'logout']);
-
-
-
 
 // Route pour récupérer la liste des utilisateurs
 Route::middleware('auth:api')->get('/users', [UtilisateurController::class, 'getUsers'])->name('api.users.index');

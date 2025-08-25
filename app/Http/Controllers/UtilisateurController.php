@@ -105,6 +105,23 @@ class UtilisateurController extends Controller
             ]
         ]);
     }
+	
+	public function getRoles(): JsonResponse
+    {
+        
+        // Récupération des rôles pour les filtres
+        $roles = Role::all()->map(function ($role) {
+            return [
+                'id' => $role->id,
+                'nom' => $role->nom_role
+            ];
+        });
+        
+        return response()->json([
+            'success' => true,
+            'data' => $roles,           
+			]);
+    }
 
     /**
      * Enregistrer un nouvel utilisateur
@@ -117,7 +134,7 @@ class UtilisateurController extends Controller
             $validator = Validator::make($request->all(), [
                 'nom' => 'required|string|max:255',
                 'email' => 'required|email|max:255|unique:utilisateurs',
-                'password' => 'required|string|min:8',
+                'password' => 'required|string',
                 'role' => 'required|string|in:admin,user',
                 'actif' => 'required|boolean'
             ]);
@@ -195,10 +212,10 @@ class UtilisateurController extends Controller
 
             // validation conditionnelle du mot de passe
             if ($request->filled('password')) {
-                $rules['password'] = 'string|min:8';
+                $rules['password'] = 'string';
             }
 
-            // M*messages de validation
+            // messages de validation
             $messages = [
                 'nom.required' => 'Le nom est obligatoire',
                 'email.required' => 'L\'email est obligatoire',
@@ -223,7 +240,7 @@ class UtilisateurController extends Controller
                 ], 422);
             }
 
-            // Mapping du rôle nom vers ID
+            // Mapping du nom de role vers ID
             $roleMapping = ['admin' => 1, 'user' => 2];
             $roleId = $roleMapping[$request->role] ?? 2;
 
@@ -266,17 +283,9 @@ class UtilisateurController extends Controller
     /**
      * Supprimer un utilisateur
      */
-
     public function destroy(Utilisateur $userId): JsonResponse
     {
-        try {
-            // vérifier si l'utilisateur tente de supprimer son propre compte
-            // if ($utilisateur->id === auth()->id()) {
-            //     return response()->json([
-            //         'success' => false,
-            //         'message' => 'Vous ne pouvez pas supprimer votre propre compte'
-            //     ], 403);
-            // }
+        try {          
 
             // supprimer l'utilisateur et retourner une réponse JSON
             $userId->delete();
@@ -304,15 +313,7 @@ class UtilisateurController extends Controller
         ]);
         
         try {
-            // Vérifier si l'utilisateur connecté est dans la liste des IDs à supprimer
-            // if (in_array(auth()->id(), $validated['ids'])) {
-            //     return response()->json([
-            //         'success' => false,
-            //         'message' => 'Vous ne pouvez pas supprimer votre propre compte'
-            //     ], 403);
-            // }
-
-
+          
             // Supprimer les utilisateurs dont les IDs sont dans le tableau
             $deletedCount = Utilisateur::whereIn('id', $validated['ids'])->delete();
             return response()->json([
@@ -348,8 +349,5 @@ class UtilisateurController extends Controller
         }
         
         return $initials ?: 'NU';
-    }
-
-    
-   
+    }  
 }

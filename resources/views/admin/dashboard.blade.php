@@ -15,16 +15,66 @@
         font-size: 18px;
         user-select: none;
     }
+    .btn-logout {
+        position: absolute;
+        bottom: 1rem;
+        left: 2rem;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.8);
+        border: none;
+        padding: 0.5rem 0.8rem;
+        border-radius: 6px;
+        font-weight: 400;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.85rem;
+    }
+
+    .btn-logout:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+    }
+
+    .btn-logout svg {
+        transition: opacity 0.2s ease;
+        opacity: 0.7;
+    }
+
+    .btn-logout:hover svg {
+        opacity: 1;
+    }
+    header {
+        position: relative;
+    }
+
+    /* Centrage du titre */
+    .header-container h1 {
+        text-align: center;
+        width: 100%;
+    }
 </style>
 </head>
 <body>
     <!-- Entête de la page -->
     <header>
-        <div class="header-container">
-            <h1>Administration des Utilisateurs</h1>
+    <div class="header-container">
+        <h1>Administration des Utilisateurs</h1>
+        <div class="header-actions">
             <button id="btn-add-user" class="btn-primary">Ajouter un utilisateur</button>
+            <button id="btn-logout" class="btn-logout">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16,17 21,12 16,7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                Déconnexion
+            </button>
         </div>
-    </header>
+    </div>
+</header>
 
     <!-- zone de la page principale -->
     <main>
@@ -43,8 +93,8 @@
                 <!-- filtrer par rôle -->
                     <select id="role-filter">
                         <option value="">Tous les rôles</option>
-                        <option value="admin">Admin</option>
-                        <option value="utilisateur">Utilisateur</option>
+                        <option value="admin">admin</option>
+                        <option value="utilisateur">user</option>
                     </select>
 
                     <!-- filtrer par status    -->
@@ -211,6 +261,7 @@
 
     <!-- Overlay pour les modals -->
     <div id="modal-overlay" class="modal-overlay"></div>
+   
     <!-- Scripts pour confirmation immediate de mot de passe -->
     <script>
         const passwordInput = document.getElementById('user-password');
