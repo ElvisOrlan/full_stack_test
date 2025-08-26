@@ -55,6 +55,22 @@
         text-align: center;
         width: 100%;
     }
+header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem 0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    margin-bottom: 250px;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000; /* pour qu'il reste au-dessus des autres éléments */
+    background-color: #fff; /* ou la couleur de ton thème */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* optionnel, pour un effet visuel */
+    padding: 10px 20px;
+}
+
 </style>
 </head>
 <body>
